@@ -1,26 +1,28 @@
 package com.example
 
-import groovyx.net.http.HTTPBuilder
-import static groovyx.net.http.Method.GET
-
 class HttpLatencyChecker {
-    String checkLatency(String url) {
-        def http = new HTTPBuilder(url)
-        def startTime = System.currentTimeMillis()
-        def latency = 0
+    String checkLatency(String urlString) {
+        URL url = new URL(urlString)
+        HttpURLConnection connection = null
+        long startTime = System.currentTimeMillis()
+        long endTime
         
         try {
-            http.request(GET) { req ->
-                response.success = { resp, reader ->
-                    latency = System.currentTimeMillis() - startTime
-                }
-                response.failure = { resp ->
-                    throw new Exception("Unexpected response status: ${resp.status}")
-                }
-            }
-            return "Latency to $url: ${latency} ms"
+            connection = (HttpURLConnection) url.openConnection()
+            connection.setRequestMethod("GET")
+            connection.connect()
+            
+            int responseCode = connection.getResponseCode()
+            endTime = System.currentTimeMillis()
+            
+            long latency = endTime - startTime
+            return "Latency to $urlString: ${latency} ms (Response Code: $responseCode)"
         } catch (Exception e) {
-            return "Error checking latency for $url: ${e.message}"
+            return "Error checking latency for $urlString: ${e.message}"
+        } finally {
+            if (connection != null) {
+                connection.disconnect()
+            }
         }
     }
 }
